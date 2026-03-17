@@ -1,19 +1,19 @@
-const BASE_URL = "https://www.googleapis.com/youtube/v3";
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'https://youtube-v31.p.rapidapi.com',
+  headers: {
+    'X-RapidAPI-Key': import.meta.env.VITE_RAPID_API_KEY,
+    'X-RapidAPI-Host': 'youtube-v31.p.rapidapi.com',
+  },
+});
 
 export const fetchFromAPI = async (url) => {
   try {
-    const response = await fetch(`${BASE_URL}/${url}&key=${import.meta.env.VITE_RAPID_API_KEY}`, {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      throw new Error("API request failed");
-    }
-
-    const data = await response.json();
+    const { data } = await api.get(url);
     return data;
   } catch (error) {
-    console.error("Fetch error:", error);
+    console.error('Fetch error:', error);
     return { items: [] }; // prevent app crash
   }
 };
