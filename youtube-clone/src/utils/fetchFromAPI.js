@@ -1,13 +1,9 @@
-const BASE_URL = "https://youtube-v31.p.rapidapi.com";
+const BASE_URL = "https://www.googleapis.com/youtube/v3";
 
 export const fetchFromAPI = async (url) => {
   try {
-    const response = await fetch(`${BASE_URL}/${url}`, {
+    const response = await fetch(`${BASE_URL}/${url}&key=${import.meta.env.VITE_RAPID_API_KEY}`, {
       method: "GET",
-      headers: {
-        "X-RapidAPI-Key": import.meta.env.VITE_RAPID_API_KEY,
-        "X-RapidAPI-Host": "youtube-v31.p.rapidapi.com",
-      },
     });
 
     if (!response.ok) {
