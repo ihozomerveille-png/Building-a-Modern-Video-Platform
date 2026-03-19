@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFromAPI } from "../utils/fetchFromAPI";
 import VideoPlayer from "../components/VideoPlayer";
-import VideoCard from "../components/VideoCard";
 import Loader from "../components/Loader";
 
 const formatCount = (num) => {
@@ -52,38 +51,43 @@ const DescriptionBox = ({ description }) => {
 const VideoDetails = () => {
   const { id: videoId } = useParams();
 
+  // Fetch video details — youtube-v311 uses Google's endpoint style
   const { data: videoData, isLoading: videoLoading } = useQuery({
     queryKey: ["videoDetails", videoId],
-    queryFn: () => fetchFromAPI(`video/details/?id=${videoId}&hl=en&gl=US`),
+    queryFn: () =>
+      fetchFromAPI(`videos/?part=snippet%2Cstatistics&id=${videoId}`),
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
 
+  // Fetch related videos
   const { data: relatedData, isLoading: relatedLoading } = useQuery({
     queryKey: ["relatedVideos", videoId],
-    queryFn: () => fetchFromAPI(`video/related-contents/?id=${videoId}&hl=en&gl=US`),
+    queryFn: () =>
+      fetchFromAPI(`search/?part=snippet&relatedToVideoId=${videoId}&type=video&maxResults=15`),
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
 
   if (videoLoading) return <Loader />;
 
-  // RapidAPI YouTube138 response shape
-  const title        = videoData?.title || "Video Title";
-  const description  = videoData?.description || "";
-  const channelTitle = videoData?.author?.title || videoData?.channelTitle || "Unknown Channel";
-  const channelId    = videoData?.author?.channelId || videoData?.channelId || "unknown";
-  const publishedAt  = videoData?.publishDate || videoData?.publishedAt || "";
-  const viewCount    = videoData?.stats?.views || videoData?.statistics?.viewCount || null;
-  const likeCount    = videoData?.stats?.likes || videoData?.statistics?.likeCount || null;
-  const commentCount = videoData?.stats?.comments || videoData?.statistics?.commentCount || null;
+  // Both API and mock return { items: [...] }
+  const videoDetail = videoData?.items?.[0];
+  const snippet    = videoDetail?.snippet || {};
+  const statistics = videoDetail?.statistics || {};
 
-  const relatedRaw = relatedData?.contents || relatedData?.items || [];
-  const relatedVideos = relatedRaw
-    .filter((item) => item?.type === "video" || item?.video || item?.id?.videoId)
-    .map((item) => item?.video || item)
-    .filter((v) => v?.videoId || v?.id?.videoId)
-    .slice(0, 15);
+  const title        = snippet?.title || "Video Title";
+  const description  = snippet?.description || "";
+  const channelTitle = snippet?.channelTitle || "Unknown Channel";
+  const channelId    = snippet?.channelId || "unknown";
+  const publishedAt  = snippet?.publishedAt || "";
+  const viewCount    = statistics?.viewCount || null;
+  const likeCount    = statistics?.likeCount || null;
+  const commentCount = statistics?.commentCount || null;
+
+  const relatedVideos = (relatedData?.items || []).filter(
+    (v) => v?.id?.videoId && v.id.videoId !== videoId
+  );
 
   return (
     <div className="bg-gray-900 min-h-screen">
@@ -138,11 +142,10 @@ const VideoDetails = () => {
           ) : (
             <div className="flex flex-col gap-3">
               {relatedVideos.map((video) => {
-                const id     = video?.videoId || video?.id?.videoId;
-                const thumb  = video?.thumbnails?.[0]?.url || video?.snippet?.thumbnails?.medium?.url;
-                const vtitle = video?.title || video?.snippet?.title || "Untitled";
-                const channel= video?.channelName || video?.author?.title || video?.snippet?.channelTitle || "";
-                const views  = video?.stats?.views || video?.statistics?.viewCount || null;
+                const id     = video?.id?.videoId;
+                const thumb  = video?.snippet?.thumbnails?.medium?.url || video?.snippet?.thumbnails?.default?.url;
+                const vtitle = video?.snippet?.title || "Untitled";
+                const channel= video?.snippet?.channelTitle || "";
                 return (
                   <Link key={id} to={`/video/${id}`}
                     className="flex gap-3 group hover:bg-gray-800 rounded-xl p-2 transition">
@@ -154,7 +157,6 @@ const VideoDetails = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-xs font-semibold line-clamp-2 group-hover:text-red-400 transition leading-snug">{vtitle}</p>
                       <p className="text-gray-400 text-xs mt-1 truncate">{channel}</p>
-                      <p className="text-gray-500 text-xs mt-0.5">{formatCount(views)} views</p>
                     </div>
                   </Link>
                 );
