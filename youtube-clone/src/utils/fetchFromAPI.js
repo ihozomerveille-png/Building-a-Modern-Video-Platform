@@ -10,16 +10,16 @@ const options = {
   },
 };
 
-// ── Mock fallback data ────────────────────────────────────────────────────────
+// ── Mock fallback data (Google API shape) ─────────────────────────────────────
 
 const mockVideos = [
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "dQw4w9WgXcQ" },
     snippet: {
       publishedAt: "2024-01-15T10:30:00Z",
       title: "React Tutorial - Build a Complete App",
-      description: "Learn React from scratch with this comprehensive tutorial covering components, hooks, state management, routing, and API integration.",
+      description: "Learn React from scratch with this comprehensive tutorial.",
       channelTitle: "Code Academy",
       channelId: "UC-code-academy",
       thumbnails: {
@@ -30,7 +30,7 @@ const mockVideos = [
     statistics: { viewCount: "1500000", likeCount: "35000", commentCount: "2500" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "9bZkp7q19f0" },
     snippet: {
       publishedAt: "2024-01-14T09:15:00Z",
@@ -46,7 +46,7 @@ const mockVideos = [
     statistics: { viewCount: "2100000", likeCount: "45000", commentCount: "3200" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "PkZNo7MFNFg" },
     snippet: {
       publishedAt: "2024-01-13T14:45:00Z",
@@ -62,7 +62,7 @@ const mockVideos = [
     statistics: { viewCount: "980000", likeCount: "22000", commentCount: "1800" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "jS4aFq5-91M" },
     snippet: {
       publishedAt: "2024-01-12T16:20:00Z",
@@ -78,7 +78,7 @@ const mockVideos = [
     statistics: { viewCount: "750000", likeCount: "18000", commentCount: "1200" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "reuLqpLrxfY" },
     snippet: {
       publishedAt: "2024-01-11T11:30:00Z",
@@ -94,7 +94,7 @@ const mockVideos = [
     statistics: { viewCount: "1200000", likeCount: "28000", commentCount: "2100" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "wIyHSOugGGw" },
     snippet: {
       publishedAt: "2024-01-10T13:45:00Z",
@@ -110,7 +110,7 @@ const mockVideos = [
     statistics: { viewCount: "890000", likeCount: "19500", commentCount: "1650" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "Ke90Tje7VS0" },
     snippet: {
       publishedAt: "2024-01-09T08:00:00Z",
@@ -126,7 +126,7 @@ const mockVideos = [
     statistics: { viewCount: "5000000", likeCount: "120000", commentCount: "8500" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "W6NZfCO5SIk" },
     snippet: {
       publishedAt: "2024-01-08T10:00:00Z",
@@ -142,7 +142,7 @@ const mockVideos = [
     statistics: { viewCount: "3200000", likeCount: "85000", commentCount: "6200" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "fis26HvvDII" },
     snippet: {
       publishedAt: "2024-01-07T12:00:00Z",
@@ -158,7 +158,7 @@ const mockVideos = [
     statistics: { viewCount: "1800000", likeCount: "42000", commentCount: "3100" },
   },
   {
-    kind: "youtube#searchResult",
+    kind: "youtube#video",
     id: { kind: "youtube#video", videoId: "SqcY0GlETPk" },
     snippet: {
       publishedAt: "2024-01-06T09:00:00Z",
@@ -176,21 +176,16 @@ const mockVideos = [
 ];
 
 const getMockResponse = (url) => {
-  // Video details endpoint → videos?part=snippet,statistics&id=VIDEO_ID
-  if (url.includes("videos") && url.includes("id=")) {
+  if (url.includes("videos/") && url.includes("id=")) {
     const idMatch = url.match(/id=([^&]+)/);
     const videoId = idMatch?.[1];
     const found = mockVideos.find((v) => v.id.videoId === videoId) || mockVideos[0];
     return { items: [found] };
   }
-
-  // Related videos → search?part=snippet&relatedToVideoId=...
-  if (url.includes("relatedToVideoId")) {
+  if (url.includes("relatedToVideoId") || url.includes("search/")) {
     return { items: mockVideos.slice(0, 8) };
   }
-
-  // Channel details → channels?part=snippet&id=...
-  if (url.includes("channels")) {
+  if (url.includes("channels/")) {
     return {
       items: [{
         id: "UC-mock",
@@ -203,8 +198,6 @@ const getMockResponse = (url) => {
       }],
     };
   }
-
-  // Search or trending → return all mock videos
   return { items: mockVideos };
 };
 
@@ -220,10 +213,7 @@ export const fetchFromAPI = async (url) => {
   } catch (error) {
     const status = error?.response?.status;
     const message = error?.response?.data?.message || error.message;
-
     console.warn("⚠️ API error:", status, message);
-
-    // Silently fall back to mock data on any error
     console.log("📦 Falling back to mock data");
     return getMockResponse(url);
   }

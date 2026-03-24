@@ -15,9 +15,10 @@ const Feed = () => {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["videos", selectedCategory],
     queryFn: () => {
+      // ✅ Correct endpoints for youtube-v311.p.rapidapi.com
       const endpoint =
         selectedCategory === "New"
-          ? "videos/?part=snippet%2CStatistics&chart=mostPopular&regionCode=US&maxResults=50"
+          ? "videos/?part=snippet%2Cstatistics&chart=mostPopular&regionCode=US&maxResults=50"
           : `search/?part=snippet&q=${encodeURIComponent(selectedCategory)}&maxResults=50&type=video`;
       return fetchFromAPI(endpoint);
     },
